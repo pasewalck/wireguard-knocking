@@ -7,7 +7,7 @@ TIMER_TARGET = /etc/systemd/system/wireguard-knocking.timer
 CONFIG_TARGET = /etc/wireguard-knocking/config.toml
 BINARY_TARGET = /usr/local/bin/wireguard-knocking
 
-
+.PHONY: all
 all: install
 
 .PHONY: install
@@ -21,17 +21,17 @@ install:
 	go -C src mod download
 	go -C src build -o /tmp/wireguard-knocking .
 	@sudo install -m 755 /tmp/wireguard-knocking $(BINARY_TARGET)
-	@rm -f /tmp/wireguard-knocking
-	@sudo go clean
+	@rm -fr /tmp/wireguard-knocking
+	go -C src clean
 	@echo "Installation complete!"
 
 .PHONY: uninstall
 uninstall:
 	@echo "Uninstalling ..."
-	@sudo systemctl disable --now wireguard-knocking.service || true
+	@sudo systemctl disable --now wireguard-knocking.timer
 	@sudo rm -f $(SERVICE_TARGET)
 	@sudo rm -f $(TIMER_TARGET)
-	@sudo rm -f /etc/wireguard-knocking/
+	@sudo rm -fr /etc/wireguard-knocking/
 	@sudo rm -f $(BINARY_TARGET)
 	@sudo systemctl daemon-reload
 	@echo "Uninstallation complete!"
