@@ -1,0 +1,10 @@
+# /etc/systemd/system/wireguard-knocking.timer
+[Unit]
+Description=Wireguard Knocking
+
+[Timer]
+OnCalendar=minutely
+Persistent=true
+
+[Install]
+WantedBy=timers.target
