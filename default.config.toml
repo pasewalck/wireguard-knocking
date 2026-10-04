@@ -2,11 +2,11 @@
 
 data_path = "/etc/wireguard-knocking/data.json"
 remove_ip_cmds = [
-    "iptables -t nat -A PREROUTING -s <ip> -p udp --dport 51822 -j DNAT --to-destination 10.200.200.2:51822",
-    "iptables -t nat -A POSTROUTING -s <ip> -d 10.200.200.2 -p udp --dport 51822 -j MASQUERADE"
+    "sudo iptables -t nat -A PREROUTING -s <ip> -p udp --dport 51822 -j DNAT --to-destination 10.200.200.2:51822",
+    "sudo iptables -t nat -A POSTROUTING -s <ip> -d 10.200.200.2 -p udp --dport 51822 -j MASQUERADE"
     ]
 add_ip_cmds = [
-    "iptables -t nat -D PREROUTING -s <ip> -p udp --dport 51822 -j DNAT --to-destination 10.200.200.2:51822",
-    "iptables -t nat -D POSTROUTING -s <ip> -d 10.200.200.2 -p udp --dport 51822 -j MASQUERADE"
+    "sudo iptables -t nat -D PREROUTING -s <ip> -p udp --dport 51822 -j DNAT --to-destination 10.200.200.2:51822",
+    "sudo iptables -t nat -D POSTROUTING -s <ip> -d 10.200.200.2 -p udp --dport 51822 -j MASQUERADE"
     ]
 wg_interface = "wg0-wk"
