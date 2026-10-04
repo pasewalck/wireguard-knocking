@@ -129,7 +129,7 @@ func main() {
 			fmt.Printf("error: 'wg show %s dump' didn't return fully parsable result!\n", conf.WgInterface)
 			continue
 		}
-		peerIp := peerDumpSplit[2]
+		peerIp := strings.Split(peerDumpSplit[2], ":")[0]
 		peerLatestHandshakeS, err := strconv.ParseInt(peerDumpSplit[4], 10, 64)
 		if err != nil {
 			fmt.Println("error:", err)
