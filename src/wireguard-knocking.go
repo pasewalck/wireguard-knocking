@@ -181,5 +181,9 @@ func main() {
 	}
 
 	_ = os.WriteFile(bootMarker, nil, 0o644)
+	err := os.WriteFile(bootMarker, nil, 0o644)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
 
 }
