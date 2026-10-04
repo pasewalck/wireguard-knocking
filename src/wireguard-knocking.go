@@ -89,7 +89,7 @@ func main() {
 		peerIp := peerDumpSplit[3]
 		peerLatestHandshakeS, _ := strconv.ParseInt(peerDumpSplit[4], 10, 64)
 
-		if currentTimeS+conf.keepAliveSeconds > peerLatestHandshakeS {
+		if currentTimeS+conf.KeepAliveSeconds > peerLatestHandshakeS {
 			newPeerIpMap[peerIp] = peerLatestHandshakeS
 		}
 	}
