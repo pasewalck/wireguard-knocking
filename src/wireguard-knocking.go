@@ -8,7 +8,6 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -43,6 +42,7 @@ func main() {
 	exists, _ := fileExists(configPath)
 
 	if exists == false {
+		fmt.Println("config at", configPath, "missing")
 		return
 	}
 
@@ -64,32 +64,52 @@ func main() {
 	newPeerIpMap := map[string]int64{}
 
 	if exists == true {
-		b, _ := os.ReadFile(conf.DataPath)
-		var items []string
-		if err := json.Unmarshal(b, &items); err != nil {
+		b, err := os.ReadFile(conf.DataPath)
+		if err != nil {
 			fmt.Println("error:", err)
+			return
+		}
+		var items []string
+		err = json.Unmarshal(b, &items)
+		if err != nil {
+			fmt.Println("error:", err)
+			return
 		}
 		for _, it := range items {
 			lastPeerIpMap[it] = 1
 		}
 	}
 
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("wg show %s dump", conf.WgInterface))
+	cmd := exec.Command("wg", "show", conf.WgInterface, "dump")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("error:", err)
+		return
 	}
-	peersDump := strings.Split(string(out), "\n")
-	peersDump = peersDump[1 : len(peersDump)-1]
+
+	if string(out) == "" {
+		fmt.Printf("error: 'wg show %s dump' didn't return parsable result!\n", conf.WgInterface)
+		return
+	}
+
+	peersDump := strings.Split(strings.TrimSpace(string(out)), "\n")[1:]
 
 	currentTimeS := time.Now().Unix()
 
 	for _, peerDump := range peersDump {
-		peerDumpSplit := regexp.MustCompile(`([^[:space:]]*)`).FindAllString(peerDump, -1)
+		peerDumpSplit := strings.Fields(peerDump)
+		if len(peerDumpSplit) < 5 {
+			fmt.Printf("error: 'wg show %s dump' didn't return parsable result!\n", conf.WgInterface)
+			return
+		}
 		peerIp := peerDumpSplit[3]
-		peerLatestHandshakeS, _ := strconv.ParseInt(peerDumpSplit[4], 10, 64)
+		peerLatestHandshakeS, err := strconv.ParseInt(peerDumpSplit[4], 10, 64)
+		if err != nil {
+			fmt.Println("error:", err)
+			return
+		}
 
-		if currentTimeS+conf.KeepAliveSeconds > peerLatestHandshakeS {
+		if peerLatestHandshakeS != 0 && currentTimeS-peerLatestHandshakeS < conf.KeepAliveSeconds {
 			newPeerIpMap[peerIp] = peerLatestHandshakeS
 		}
 	}
@@ -99,7 +119,7 @@ func main() {
 		val, _ := newPeerIpMap[peerIp]
 
 		if ok1 == false {
-			fmt.Printf("adding %s (last handshake %d seconds ago)\n", conf.WgInterface, currentTimeS-val)
+			fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
 
 			for _, addIpCmd := range conf.AddIpCmds {
 				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", peerIp)
@@ -127,11 +147,13 @@ func main() {
 				}
 			}
 		} else {
-			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", conf.WgInterface, currentTimeS-val)
+			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
 		}
 	}
 
 	data, _ := json.Marshal(slices.Collect(maps.Keys(newPeerIpMap)))
-	os.WriteFile(conf.DataPath, data, 0o644)
-
+	err = os.WriteFile(conf.DataPath, data, 0o644)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
 }
