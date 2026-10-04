@@ -99,8 +99,8 @@ func main() {
 	for _, peerDump := range peersDump {
 		peerDumpSplit := strings.Fields(peerDump)
 		if len(peerDumpSplit) < 5 {
-			fmt.Printf("error: 'wg show %s dump' didn't return parsable result!\n", conf.WgInterface)
-			return
+			fmt.Printf("error: 'wg show %s dump' didn't return fully parsable result!\n", conf.WgInterface)
+			continue
 		}
 		peerIp := peerDumpSplit[3]
 		peerLatestHandshakeS, err := strconv.ParseInt(peerDumpSplit[4], 10, 64)
