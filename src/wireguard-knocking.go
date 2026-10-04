@@ -29,10 +29,11 @@ func fileExists(path string) (bool, error) {
 }
 
 type Config struct {
-	DataPath     string   `toml:"data_path"`
-	WgInterface  string   `toml:"wg_interface"`
-	RemoveIpCmds []string `toml:"remove_ip_cmds"`
-	AddIpCmds    []string `toml:"add_ip_cmds"`
+	DataPath         string   `toml:"data_path"`
+	WgInterface      string   `toml:"wg_interface"`
+	RemoveIpCmds     []string `toml:"remove_ip_cmds"`
+	AddIpCmds        []string `toml:"add_ip_cmds"`
+	keepAliveSeconds int64    `toml:"keep_alive_seconds"`
 }
 
 func main() {
@@ -88,7 +89,7 @@ func main() {
 		peerIp := peerDumpSplit[3]
 		peerLatestHandshakeS, _ := strconv.ParseInt(peerDumpSplit[4], 10, 64)
 
-		if currentTimeS+60*15 > peerLatestHandshakeS {
+		if currentTimeS+conf.keepAliveSeconds > peerLatestHandshakeS {
 			newPeerIpMap[peerIp] = peerLatestHandshakeS
 		}
 	}
