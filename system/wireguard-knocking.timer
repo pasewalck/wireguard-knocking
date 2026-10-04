@@ -5,6 +5,7 @@ Description=Wireguard Knocking
 [Timer]
 OnCalendar=minutely
 Persistent=true
+OnBootSec=60s
 
 [Install]
 WantedBy=timers.target
