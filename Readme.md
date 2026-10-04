@@ -13,6 +13,10 @@ This software is designed primarily an unconventional means of implicit authoriz
 5. Start Timed Service: `sudo make start`
 6. Enable Timed Service: `sudo make enable`
 
+## Uninstall
+
+`sudo make uninstall`
+
 ## Example Usage
 
 ### Traffic Forwarding
