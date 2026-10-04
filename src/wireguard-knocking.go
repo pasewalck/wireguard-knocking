@@ -112,72 +112,78 @@ func main() {
 		}
 	}
 
-	cmd := exec.Command("wg", "show", conf.WgInterface, "dump")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("error:", err)
-		return
-	}
-
-	if string(out) == "" {
-		fmt.Printf("error: 'wg show %s dump' didn't return parsable result!\n", conf.WgInterface)
-		return
-	}
-
-	peersDump := strings.Split(strings.TrimSpace(string(out)), "\n")[1:]
-
-	currentTimeS := time.Now().Unix()
-
-	for _, peerDump := range peersDump {
-		peerDumpSplit := strings.Fields(peerDump)
-		if len(peerDumpSplit) < 5 {
-			fmt.Printf("error: 'wg show %s dump' didn't return fully parsable result!\n", conf.WgInterface)
-			continue
-		}
-		peerIp, _, err := net.SplitHostPort(peerDumpSplit[2])
-		if err != nil {
-			fmt.Println("error:", err)
-			continue
-		}
-
-		peerLatestHandshakeS, err := strconv.ParseInt(peerDumpSplit[4], 10, 64)
-		if err != nil {
-			fmt.Println("error:", err)
-			continue
-		}
-
-		if peerLatestHandshakeS != 0 && currentTimeS-peerLatestHandshakeS < conf.KeepAliveSeconds {
-			newPeerIpMap[peerIp] = peerLatestHandshakeS
-		}
-	}
-
-	for peerIp := range newPeerIpMap {
-		_, ok1 := lastPeerIpMap[peerIp]
-		val, _ := newPeerIpMap[peerIp]
-
-		if ok1 == false {
-			fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
-			runCmds(conf.AddIpCmds, peerIp)
-		} else if firstRunAfterBoot && conf.StartUpRerun {
+	if firstRunAfterBoot && conf.StartUpRerun {
+		for peerIp := range lastPeerIpMap {
 			fmt.Printf("performing rerun for %s\n", peerIp)
 			runCmds(conf.AddIpCmds, peerIp)
 		}
-	}
-	for peerIp := range lastPeerIpMap {
-		val, ok := newPeerIpMap[peerIp]
-		if ok == false {
-			fmt.Println("removing", peerIp)
-			runCmds(conf.RemoveIpCmds, peerIp)
-		} else {
-			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
-		}
-	}
+	} else {
 
-	data, _ := json.Marshal(slices.Collect(maps.Keys(newPeerIpMap)))
-	err = os.WriteFile(conf.DataPath, data, 0o644)
-	if err != nil {
-		fmt.Println("error:", err)
-		return
+		cmd := exec.Command("wg", "show", conf.WgInterface, "dump")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("error:", err)
+			return
+		}
+
+		if string(out) == "" {
+			fmt.Printf("error: 'wg show %s dump' didn't return parsable result!\n", conf.WgInterface)
+			return
+		}
+
+		peersDump := strings.Split(strings.TrimSpace(string(out)), "\n")[1:]
+
+		currentTimeS := time.Now().Unix()
+
+		for _, peerDump := range peersDump {
+			peerDumpSplit := strings.Fields(peerDump)
+			if len(peerDumpSplit) < 5 {
+				fmt.Printf("error: 'wg show %s dump' didn't return fully parsable result!\n", conf.WgInterface)
+				continue
+			}
+			peerIp, _, err := net.SplitHostPort(peerDumpSplit[2])
+			if err != nil {
+				fmt.Println("error:", err)
+				continue
+			}
+
+			peerLatestHandshakeS, err := strconv.ParseInt(peerDumpSplit[4], 10, 64)
+			if err != nil {
+				fmt.Println("error:", err)
+				continue
+			}
+
+			if peerLatestHandshakeS != 0 && currentTimeS-peerLatestHandshakeS < conf.KeepAliveSeconds {
+				newPeerIpMap[peerIp] = peerLatestHandshakeS
+			}
+		}
+
+		for peerIp := range newPeerIpMap {
+			_, ok1 := lastPeerIpMap[peerIp]
+			val, _ := newPeerIpMap[peerIp]
+
+			if ok1 == false {
+				fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
+				runCmds(conf.AddIpCmds, peerIp)
+			}
+		}
+
+		for peerIp := range lastPeerIpMap {
+			val, ok := newPeerIpMap[peerIp]
+			if ok == false {
+				fmt.Println("removing", peerIp)
+				runCmds(conf.RemoveIpCmds, peerIp)
+			} else {
+				fmt.Printf("persisting %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
+			}
+		}
+
+		data, _ := json.Marshal(slices.Collect(maps.Keys(newPeerIpMap)))
+		err = os.WriteFile(conf.DataPath, data, 0o644)
+		if err != nil {
+			fmt.Println("error:", err)
+			return
+		}
 	}
 
 	_ = os.WriteFile(bootMarker, nil, 0o644)
