@@ -5,10 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -52,45 +56,54 @@ func main() {
 		return
 	}
 
-	var items []string
-
 	exists, _ = fileExists(conf.DataPath)
+
+	// We only use the keys, essentially using this as a Set
+	lastPeerIpMap := map[string]int64{}
+	newPeerIpMap := map[string]int64{}
 
 	if exists == true {
 		b, _ := os.ReadFile(conf.DataPath)
+		var items []string
 		if err := json.Unmarshal(b, &items); err != nil {
 			fmt.Println("error:", err)
 		}
+		for _, it := range items {
+			lastPeerIpMap[it] = 1
+		}
 	}
 
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("wg show %s endpoints", conf.WgInterface))
-
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("wg show %s dump", conf.WgInterface))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	re := regexp.MustCompile(`\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}`)
-	newItems := re.FindAllString(string(out), -1)
+	peersDump := strings.Split(string(out), "\n")
+	peersDump = peersDump[1 : len(peersDump)-1]
 
-	itemsMap := map[string]int{}
-	newItemsMap := map[string]int{}
+	currentTimeS := time.Now().Unix()
 
-	for _, it := range newItems {
-		newItemsMap[it] = 1
+	for _, peerDump := range peersDump {
+		peerDumpSplit := regexp.MustCompile(`([^[:space:]]*)`).FindAllString(peerDump, -1)
+		peerIp := peerDumpSplit[3]
+		peerLatestHandshakeS, _ := strconv.ParseInt(peerDumpSplit[4], 10, 64)
+
+		if currentTimeS+60*15 > peerLatestHandshakeS {
+			newPeerIpMap[peerIp] = peerLatestHandshakeS
+		}
 	}
-	for _, it := range items {
-		itemsMap[it] = 1
-	}
 
-	for _, it := range newItems {
-		_, ok := itemsMap[it]
-		if ok == false {
-			fmt.Println("adding", it)
+	for peerIp := range newPeerIpMap {
+		_, ok1 := lastPeerIpMap[peerIp]
+		val, _ := newPeerIpMap[peerIp]
+
+		if ok1 == false {
+			fmt.Printf("adding %s (last handshake %d seconds ago)\n", conf.WgInterface, currentTimeS-val)
 
 			for _, addIpCmd := range conf.AddIpCmds {
-				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", it)
+				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", peerIp)
 				fmt.Println("running ", formattedCmd)
-				cmd := exec.Command("bash", "-c", formattedCmd)
+				cmd = exec.Command("bash", "-c", formattedCmd)
 				out, err = cmd.CombinedOutput()
 				if err != nil {
 					fmt.Println("error:", err)
@@ -98,13 +111,13 @@ func main() {
 			}
 		}
 	}
-	for _, it := range items {
-		_, ok := newItemsMap[it]
+	for peerIp := range lastPeerIpMap {
+		val, ok := newPeerIpMap[peerIp]
 		if ok == false {
-			fmt.Println("removing", it)
+			fmt.Println("removing", peerIp)
 
 			for _, removeIpCmd := range conf.RemoveIpCmds {
-				formattedCmd := strings.ReplaceAll(removeIpCmd, "<ip>", it)
+				formattedCmd := strings.ReplaceAll(removeIpCmd, "<ip>", peerIp)
 				fmt.Println("running ", formattedCmd)
 				cmd := exec.Command("bash", "-c", formattedCmd)
 				out, err = cmd.CombinedOutput()
@@ -112,10 +125,12 @@ func main() {
 					fmt.Println("error:", err)
 				}
 			}
+		} else {
+			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", conf.WgInterface, currentTimeS-val)
 		}
 	}
 
-	data, _ := json.Marshal(newItems)
+	data, _ := json.Marshal(slices.Collect(maps.Keys(newPeerIpMap)))
 	os.WriteFile(conf.DataPath, data, 0o644)
 
 }
