@@ -103,7 +103,7 @@ func main() {
 
 			for _, addIpCmd := range conf.AddIpCmds {
 				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", peerIp)
-				fmt.Println("running ", formattedCmd)
+				fmt.Println("running", formattedCmd)
 				cmd = exec.Command("bash", "-c", formattedCmd)
 				out, err = cmd.CombinedOutput()
 				if err != nil {
