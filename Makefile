@@ -16,7 +16,7 @@ install:
 	@sudo mkdir -p /etc/wireguard-knocking
 	@sudo install -m 644 $(SERVICE) $(SERVICE_TARGET)
 	@sudo install -m 644 $(TIMER) $(TIMER_TARGET)
-    @if [ ! -f $(CONFIG_TARGET) ]; then \
+	@if [ ! -f $(CONFIG_TARGET) ]; then \
         sudo install -m 644 $(CONFIG) $(CONFIG_TARGET); \
     fi
 	@sudo systemctl daemon-reload
