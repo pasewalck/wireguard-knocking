@@ -10,6 +10,8 @@ This software is designed primarily an unconventional means of implicit authoriz
 2. Clone this repo and open it: `git clone https://github.com/pasewalck/wireguard-knocking.git && cd wireguard-knocking`
 3. Install: `sudo make install`
 4. Configure: `sudo vi /etc/wireguard-knocking/config.toml`
+5. Start Timed Service: `sudo make start`
+6. Enable Timed Service: `sudo make enable`
 
 ## Example Usage
 
