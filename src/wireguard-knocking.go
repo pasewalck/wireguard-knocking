@@ -148,7 +148,9 @@ func main() {
 		if ok1 == false {
 			fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
 			runCmds(conf.AddIpCmds, peerIp)
-
+		} else if firstRunAfterBoot && conf.StartUpRerun {
+			fmt.Printf("performing rerun for %s\n", peerIp)
+			runCmds(conf.AddIpCmds, peerIp)
 		}
 	}
 	for peerIp := range lastPeerIpMap {
@@ -158,10 +160,6 @@ func main() {
 			runCmds(conf.RemoveIpCmds, peerIp)
 		} else {
 			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
-			if firstRunAfterBoot && conf.StartUpRerun {
-				fmt.Printf("performing rerun for %s\n", peerIp)
-				runCmds(conf.AddIpCmds, peerIp)
-			}
 		}
 	}
 
