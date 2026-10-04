@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"net"
 	"os"
 	"os/exec"
 	"slices"
@@ -34,6 +35,19 @@ type Config struct {
 	AddIpCmds        []string `toml:"add_ip_cmds"`
 	KeepAliveSeconds int64    `toml:"keep_alive_seconds"`
 	StartUpRerun     bool     `toml:"start_up_rerun"`
+}
+
+func runCmds(commands []string, peerIp string) {
+
+	for _, cmdString := range commands {
+		formattedCmd := strings.ReplaceAll(cmdString, "<ip>", net.ParseIP(peerIp).String())
+		fmt.Println("running ", formattedCmd)
+		cmd := exec.Command("bash", "-c", formattedCmd)
+		_, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+	}
 }
 
 func main() {
@@ -133,40 +147,21 @@ func main() {
 
 		if ok1 == false {
 			fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
-		}
+			runCmds(conf.AddIpCmds, peerIp)
 
-		if ok1 == false || (firstRunAfterBoot && conf.StartUpRerun) {
-			if ok1 == true && firstRunAfterBoot && conf.StartUpRerun {
-				fmt.Printf("performing rerun %s\n", peerIp)
-			}
-
-			for _, addIpCmd := range conf.AddIpCmds {
-				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", peerIp)
-				fmt.Println("running", formattedCmd)
-				cmd = exec.Command("bash", "-c", formattedCmd)
-				out, err = cmd.CombinedOutput()
-				if err != nil {
-					fmt.Println("error:", err)
-				}
-			}
 		}
 	}
 	for peerIp := range lastPeerIpMap {
 		val, ok := newPeerIpMap[peerIp]
 		if ok == false {
 			fmt.Println("removing", peerIp)
-
-			for _, removeIpCmd := range conf.RemoveIpCmds {
-				formattedCmd := strings.ReplaceAll(removeIpCmd, "<ip>", peerIp)
-				fmt.Println("running ", formattedCmd)
-				cmd := exec.Command("bash", "-c", formattedCmd)
-				out, err = cmd.CombinedOutput()
-				if err != nil {
-					fmt.Println("error:", err)
-				}
-			}
+			runCmds(conf.RemoveIpCmds, peerIp)
 		} else {
 			fmt.Printf("persisting %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
+			if firstRunAfterBoot && conf.StartUpRerun {
+				fmt.Printf("performing rerun for %s\n", peerIp)
+				runCmds(conf.AddIpCmds, peerIp)
+			}
 		}
 	}
 
