@@ -88,7 +88,9 @@ func main() {
 			fmt.Println("adding", it)
 
 			for _, addIpCmd := range conf.AddIpCmds {
-				cmd := exec.Command("bash", "-c", strings.ReplaceAll(addIpCmd, "<ip>", it))
+				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", it)
+				fmt.Println("running ", formattedCmd)
+				cmd := exec.Command("bash", "-c", formattedCmd)
 				out, err = cmd.CombinedOutput()
 				if err != nil {
 					fmt.Println("error:", err)
@@ -102,7 +104,9 @@ func main() {
 			fmt.Println("removing", it)
 
 			for _, removeIpCmd := range conf.RemoveIpCmds {
-				cmd := exec.Command("bash", "-c", strings.ReplaceAll(removeIpCmd, "<ip>", it))
+				formattedCmd := strings.ReplaceAll(removeIpCmd, "<ip>", it)
+				fmt.Println("running ", formattedCmd)
+				cmd := exec.Command("bash", "-c", formattedCmd)
 				out, err = cmd.CombinedOutput()
 				if err != nil {
 					fmt.Println("error:", err)
