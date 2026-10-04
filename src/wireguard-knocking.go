@@ -48,7 +48,7 @@ func main() {
 	firstRunAfterBoot := false
 	exists, _ := fileExists(bootMarker)
 
-	if exists {
+	if exists == false {
 		firstRunAfterBoot = true
 		_ = os.WriteFile(bootMarker, nil, 0o644)
 	}
