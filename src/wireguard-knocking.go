@@ -33,7 +33,7 @@ type Config struct {
 	WgInterface      string   `toml:"wg_interface"`
 	RemoveIpCmds     []string `toml:"remove_ip_cmds"`
 	AddIpCmds        []string `toml:"add_ip_cmds"`
-	keepAliveSeconds int64    `toml:"keep_alive_seconds"`
+	KeepAliveSeconds int64    `toml:"keep_alive_seconds"`
 }
 
 func main() {
