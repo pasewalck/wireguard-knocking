@@ -5,4 +5,4 @@ add_ip_cmds = []
 remove_ip_cmds = []
 wg_interface = "wg0-wk"
 keep_alive_seconds = 600
-startUpRerun = true
+start-up-rerun = true
