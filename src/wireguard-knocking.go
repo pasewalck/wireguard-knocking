@@ -50,7 +50,6 @@ func main() {
 
 	if exists == false {
 		firstRunAfterBoot = true
-		_ = os.WriteFile(bootMarker, nil, 0o644)
 	}
 
 	exists, _ = fileExists(configPath)
@@ -175,5 +174,9 @@ func main() {
 	err = os.WriteFile(conf.DataPath, data, 0o644)
 	if err != nil {
 		fmt.Println("error:", err)
+		return
 	}
+
+	_ = os.WriteFile(bootMarker, nil, 0o644)
+
 }
