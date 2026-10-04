@@ -33,17 +33,27 @@ type Config struct {
 	RemoveIpCmds     []string `toml:"remove_ip_cmds"`
 	AddIpCmds        []string `toml:"add_ip_cmds"`
 	KeepAliveSeconds int64    `toml:"keep_alive_seconds"`
+	StartUpRerun     bool     `toml:"start_up_rerun"`
 }
 
 func main() {
 
 	configPath := os.Getenv("WIREGUARD_KNOCKING_CONFIG")
+	bootMarker := "/run/wireguard-knocking.has-booted"
 
 	if configPath == "" {
 		configPath = "/etc/wireguard-knocking/config.toml"
 	}
 
-	exists, _ := fileExists(configPath)
+	firstRunAfterBoot := false
+	exists, _ := fileExists(bootMarker)
+
+	if exists {
+		firstRunAfterBoot = true
+		_ = os.WriteFile(bootMarker, nil, 0o644)
+	}
+
+	exists, _ = fileExists(configPath)
 
 	if exists == false {
 		fmt.Println("config at", configPath, "missing")
@@ -124,6 +134,12 @@ func main() {
 
 		if ok1 == false {
 			fmt.Printf("adding %s (last handshake %d seconds ago)\n", peerIp, currentTimeS-val)
+		}
+
+		if ok1 == false || (firstRunAfterBoot && conf.StartUpRerun) {
+			if ok1 == true && firstRunAfterBoot && conf.StartUpRerun {
+				fmt.Printf("performing rerun %s\n", peerIp)
+			}
 
 			for _, addIpCmd := range conf.AddIpCmds {
 				formattedCmd := strings.ReplaceAll(addIpCmd, "<ip>", peerIp)
