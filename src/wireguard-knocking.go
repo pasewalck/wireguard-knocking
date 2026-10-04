@@ -64,14 +64,7 @@ func main() {
 		configPath = "/etc/wireguard-knocking/config.toml"
 	}
 
-	firstRunAfterBoot := false
-	exists, _ := fileExists(bootMarker)
-
-	if exists == false {
-		firstRunAfterBoot = true
-	}
-
-	exists, _ = fileExists(configPath)
+	exists, _ := fileExists(configPath)
 
 	if exists == false {
 		fmt.Println("config at", configPath, "missing")
@@ -109,6 +102,18 @@ func main() {
 		}
 		for _, it := range items {
 			lastPeerIpMap[it] = 1
+		}
+	}
+
+	firstRunAfterBoot := false
+	exists, _ = fileExists(bootMarker)
+
+	if exists == false {
+		firstRunAfterBoot = true
+		err := os.WriteFile(bootMarker, nil, 0o644)
+		if err != nil {
+			fmt.Println("error:", err)
+			firstRunAfterBoot = false
 		}
 	}
 
@@ -184,11 +189,6 @@ func main() {
 			fmt.Println("error:", err)
 			return
 		}
-	}
-
-	err := os.WriteFile(bootMarker, nil, 0o644)
-	if err != nil {
-		fmt.Println("error:", err)
 	}
 
 }
