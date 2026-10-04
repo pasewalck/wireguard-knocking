@@ -40,7 +40,12 @@ type Config struct {
 func runCmds(commands []string, peerIp string) {
 
 	for _, cmdString := range commands {
-		formattedCmd := strings.ReplaceAll(cmdString, "<ip>", net.ParseIP(peerIp).String())
+		ip := net.ParseIP(peerIp)
+		if ip == nil {
+			fmt.Println("error:", ip, "is not an IP.")
+			return
+		}
+		formattedCmd := strings.ReplaceAll(cmdString, "<ip>", ip.String())
 		fmt.Println("running ", formattedCmd)
 		cmd := exec.Command("bash", "-c", formattedCmd)
 		_, err := cmd.CombinedOutput()
