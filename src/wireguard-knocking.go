@@ -37,7 +37,11 @@ type Config struct {
 
 func main() {
 
-	configPath := "/etc/wireguard-knocking/config.toml"
+	configPath := os.Getenv("WIREGUARD_KNOCKING_CONFIG")
+
+	if configPath == "" {
+		configPath = "/etc/wireguard-knocking/config.toml"
+	}
 
 	exists, _ := fileExists(configPath)
 
