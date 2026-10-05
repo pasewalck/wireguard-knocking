@@ -4,6 +4,8 @@ Basically a daemon that watches a WireGuard interface. It executes commands for 
 
 This software is designed primarily an unconventional means of implicit authorization. A WireGuard peer is treated as an authorization signal to perform a task – e.g. open some ports or forward traffic for the given address.
 
+Read more on the [context of this software's creation](https://jpasewalck.org/2026/10/wireguarding-my-homelab-and-overcoming-androids-limitations/).
+
 ## Install
 
 1. [Install go](https://go.dev/doc/install)
